@@ -26,6 +26,14 @@ A classic Snake Game built with HTML, CSS, and JavaScript but with the help of *
 - Responsive design that works on both desktop and mobile
 - Local storage for persistent high scores
 
+
+## Installation
+
+To build your own version using Amazon Q CLI, follow the installation guide here:  
+📦 [Amazon Q CLI Installation Guide](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/command-line-installing.html)
+
+After installing Amazon Q CLI, you can start a chat session and build applications like this one using natural language prompts.
+
 ## Event Information
 Join the event to experience building projects with Amazon Q CLI and get a chance to win a T-shirt!
 
