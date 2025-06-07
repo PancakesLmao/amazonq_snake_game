@@ -119,16 +119,18 @@
         const gridSize = 20;
         const tileCount = canvas.width / gridSize;
         const normalGameSpeed = 150;
-        const boostedGameSpeed = 75; // Faster speed when power-up is active
+        const boostedGameSpeed = 75;
+        const specialFoodDuration = 3000;
 
         let snake = [
             { x: 10, y: 10 }
         ];
         let food = {};
-        let isSpecialFood = false; // Track if current food is special
-        let speedBoostActive = false; // Track if speed boost is active
-        let speedBoostTimer = null; // Timer for speed boost
-        let gameInterval; // Store the game interval for speed changes
+        let specialFood = null;
+        let specialFoodTimer = null;
+        let speedBoostActive = false;
+        let speedBoostTimer = null;
+        let gameInterval;
         let dx = 0;
         let dy = 0;
         let score = 0;
@@ -140,13 +142,37 @@
 
         // Generate random food position
         function randomFood() {
-            // 20% chance to spawn special food
-            isSpecialFood = Math.random() < 0.2;
-
             food = {
                 x: Math.floor(Math.random() * tileCount),
                 y: Math.floor(Math.random() * tileCount)
             };
+
+            // 20% chance to spawn special food
+            if (Math.random() < 0.2 && !specialFood) {
+                spawnSpecialFood();
+            }
+        }
+
+        // Spawn special food
+        function spawnSpecialFood() {
+            let x, y;
+            do {
+                x = Math.floor(Math.random() * tileCount);
+                y = Math.floor(Math.random() * tileCount);
+            } while ((x === food.x && y === food.y) || isSnakeSegment(x, y));
+
+            specialFood = { x, y };
+
+            // Set timer to remove special food after 3 seconds
+            if (specialFoodTimer) clearTimeout(specialFoodTimer);
+            specialFoodTimer = setTimeout(() => {
+                specialFood = null;
+            }, specialFoodDuration);
+        }
+
+        // Check if position is occupied by snake
+        function isSnakeSegment(x, y) {
+            return snake.some(segment => segment.x === x && segment.y === y);
         }
 
         // Draw game elements
@@ -173,21 +199,31 @@
                 ctx.strokeRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
             });
 
-            // Draw food (special food is gold)
-            ctx.fillStyle = isSpecialFood ? '#f39c12' : '#e74c3c';
+            // Draw normal food
+            ctx.fillStyle = '#e74c3c';
             ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 2, gridSize - 2);
 
-            // Add glow effect to food
-            ctx.shadowColor = isSpecialFood ? '#f39c12' : '#e74c3c';
+            // Add glow effect to normal food
+            ctx.shadowColor = '#e74c3c';
             ctx.shadowBlur = 10;
             ctx.fillRect(food.x * gridSize + 2, food.y * gridSize + 2, gridSize - 6, gridSize - 6);
             ctx.shadowBlur = 0;
 
-            // Add star shape to special food
-            if (isSpecialFood) {
+            // Draw special food if it exists
+            if (specialFood) {
+                ctx.fillStyle = '#f39c12';
+                ctx.fillRect(specialFood.x * gridSize, specialFood.y * gridSize, gridSize - 2, gridSize - 2);
+
+                // Add glow effect to special food
+                ctx.shadowColor = '#f39c12';
+                ctx.shadowBlur = 10;
+                ctx.fillRect(specialFood.x * gridSize + 2, specialFood.y * gridSize + 2, gridSize - 6, gridSize - 6);
+                ctx.shadowBlur = 0;
+
+                // Add star shape to special food
                 ctx.fillStyle = '#ffffff';
-                const centerX = food.x * gridSize + gridSize / 2;
-                const centerY = food.y * gridSize + gridSize / 2;
+                const centerX = specialFood.x * gridSize + gridSize / 2;
+                const centerY = specialFood.y * gridSize + gridSize / 2;
                 const size = gridSize / 5;
 
                 ctx.beginPath();
@@ -230,19 +266,26 @@
             // Add new head first
             snake.unshift(head);
 
-            // Check food collision
+            // Check normal food collision
             if (head.x === food.x && head.y === food.y) {
-                // Add bonus score for special food
-                const points = isSpecialFood ? 25 : 10;
-                score += points;
+                score += 10;
                 scoreElement.textContent = score;
-
-                // Activate speed boost if special food
-                if (isSpecialFood) {
-                    activateSpeedBoost();
-                }
-
                 randomFood();
+
+                // Update high score
+                if (score > highScore) {
+                    highScore = score;
+                    highScoreElement.textContent = highScore;
+                    localStorage.setItem('snakeHighScore', highScore);
+                }
+            }
+            // Check special food collision
+            else if (specialFood && head.x === specialFood.x && head.y === specialFood.y) {
+                score += 25;
+                scoreElement.textContent = score;
+                activateSpeedBoost();
+                specialFood = null;
+                if (specialFoodTimer) clearTimeout(specialFoodTimer);
 
                 // Update high score
                 if (score > highScore) {
@@ -270,6 +313,7 @@
             gameOverElement.style.display = 'block';
             clearInterval(gameInterval);
             if (speedBoostTimer) clearTimeout(speedBoostTimer);
+            if (specialFoodTimer) clearTimeout(specialFoodTimer);
         }
 
         // Restart game
@@ -282,7 +326,9 @@
             gameRunning = true;
             gameOverElement.style.display = 'none';
             speedBoostActive = false;
+            specialFood = null;
             if (speedBoostTimer) clearTimeout(speedBoostTimer);
+            if (specialFoodTimer) clearTimeout(specialFoodTimer);
 
             // Reset game speed
             clearInterval(gameInterval);
