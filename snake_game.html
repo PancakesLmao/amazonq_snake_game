@@ -142,10 +142,13 @@
 
         // Generate random food position
         function randomFood() {
-            food = {
-                x: Math.floor(Math.random() * tileCount),
-                y: Math.floor(Math.random() * tileCount)
-            };
+            let x, y;
+            do {
+                x = Math.floor(Math.random() * tileCount);
+                y = Math.floor(Math.random() * tileCount);
+            } while (isSnakeSegment(x, y));
+            
+            food = { x, y };
 
             // 20% chance to spawn special food
             if (Math.random() < 0.2 && !specialFood) {
